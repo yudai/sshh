@@ -1,0 +1,63 @@
+#/bin/bash
+
+session_name=$(tmux display-message -p '#{session_name}')
+window_index=$(tmux display-message -p '#{window_index}')
+pane_index=0
+
+if [ -n "$1" ]; then
+    w=$(echo "$1" | awk -F ',' '{ print $1 }')
+    p=$(echo "$1" | awk -F ',' '{ print $2 }')
+
+    if [ -n "$w" ]; then
+        window_index=$w
+    fi
+    if [ -n "$p" ]; then
+        pane_index=$p
+    fi
+fi
+
+if [ -n "$2" ]; then
+    session_name=$2
+fi
+
+pane_list="$(tmux list-panes -s -F '#{window_index},#{pane_index} #{pane_pid}' -t "$session_name")"
+# Non 0 if given session doesn't exist
+if [ $? != 0 ]; then
+    exit 1
+fi
+
+target_pane=$(echo "${pane_list}" | grep "${window_index},${pane_index}")
+if [ $? != 0 ]; then
+    echo "Pane #${pane_index} of Window #${window_index} not found."
+    exit 2
+fi
+
+pane_pid=$(echo "${target_pane}" | awk '{ print $2 }')
+
+IFS=$'\n'
+for child_pid in $(pgrep -P ${pane_pid}); do
+    # white spaces are replaced with NULL characters
+    child_cmd=$(cat "/proc/${child_pid}/cmdline" | tr '\000' ' ' | sed 's/ $//')
+    if [ $(echo "${child_cmd}" | awk '{ print $1 }') = 'ssh' ]; then
+        echo "${child_cmd}"
+        eval "exec ${child_cmd}"
+    else
+        echo "Command at Pane #${pane_index} of Window #${window_index} is not SSH."
+        echo -n "Do you want to run '${child_cmd}' ? [y/N]: "
+        while [ 1 ]; do
+            read line
+            case $line in
+                [yY]) eval "exec ${child_cmd}"; break;;
+                [Nn] | "") exit 4;;
+                *) echo "Error: [Yy] is expected: "
+            esac
+        done
+    fi
+
+    # Ignore following lines
+    break
+done
+
+# Reach here only when there is no running command
+echo "No running command at Pane #${pane_index} of Window #${window_index}"
+exit 5
