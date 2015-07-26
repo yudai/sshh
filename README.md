@@ -8,7 +8,11 @@ SSHH is inspired by [the cdd command](https://github.com/m4i/cdd).
 
 ## Installation
 
-Put the `sshh` file to any directory included in the `$PATH` environment variable.
+Put the `sshh` file to any directory included in the `$PATH` environment variable and give the execution permission to the file.
+
+```sh
+wget "https://raw.githubusercontent.com/yudai/sshh/master/sshh" && chmod a+x sshh
+```
 
 ## Usage
 
