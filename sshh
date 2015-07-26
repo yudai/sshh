@@ -36,8 +36,7 @@ pane_pid=$(echo "${target_pane}" | awk '{ print $2 }')
 
 IFS=$'\n'
 for child_pid in $(pgrep -P ${pane_pid}); do
-    # white spaces are replaced with NULL characters
-    child_cmd=$(cat "/proc/${child_pid}/cmdline" | tr '\000' ' ' | sed 's/ $//')
+    child_cmd=$(ps ${child_pid} | tail -n 1 | awk '{for(i=5;i<NF;i++) printf("%s ",$i); print $NF}')
     if [ $(echo "${child_cmd}" | awk '{ print $1 }') = 'ssh' ]; then
         echo "${child_cmd}"
         eval "exec ${child_cmd}"
