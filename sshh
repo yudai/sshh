@@ -35,7 +35,7 @@ fi
 pane_pid=$(echo "${target_pane}" | awk '{ print $2 }')
 
 IFS=$'\n'
-for child_pid in $(pgrep -P ${pane_pid}); do
+for child_pid in $(pgrep -P ${pane_pid} || echo ${pane_pid}); do
     child_cmd=$(ps ${child_pid} | tail -n 1 | awk '{for(i=5;i<NF;i++) printf("%s ",$i); print $NF}')
     if [ $(echo "${child_cmd}" | awk '{ print $1 }') = 'ssh' ]; then
         echo "${child_cmd}"
